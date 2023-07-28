@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# This script will execute the passed command on all child directories of the current directory.
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+
+# Check if the user passed a command to execute.
+if [ $# -eq 0 ]; then
+    echo -e "${RED}Usage: $0 command${NC}"
+    echo "Example: $0 git status"
+    exit 1
+fi
+
+# Check if the user passed the -h or --help flag.
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    echo "Usage: $0 <command>"
+    exit 0
+fi
+
+# Initialize an empty variable for storing failed directories
+failed=""
+
+# Get the absolute path of the current directory.
+base_dir=$(pwd)
+
+# Loop through all child directories.
+for dir in */; do
+    # Check if the current item is a directory.
+    if [ -d "$dir" ]; then
+        # Get the absolute path of the directory.
+        dir_path="${base_dir}/${dir}"
+
+        # Use a subshell to change into the directory.
+        echo -e "${BLUE}Executing" "$*" "in ${dir_path}${NC}"
+        cd "${dir_path}" || exit
+        # Execute the command and check for failure.
+        if ! "$@"; then
+            failed="${failed}\n${dir_path}"
+            echo -e "${YELLOW}Warning: Command failed in ${dir_path}${NC}"
+        fi
+        # Move back to the base directory.
+        cd "${base_dir}" || exit
+    fi
+done
+
+if [ -z "$failed" ]; then
+    echo -e "${GREEN}Success:" \'"$*"\' "was executed successfully in all directories.${NC}"
+else
+    echo -e "${RED}The command" \'"$*"\' "failed in the following directories:${failed}${NC}"
+fi
